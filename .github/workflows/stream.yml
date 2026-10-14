@@ -1,0 +1,28 @@
+name: 247 YouTube Live
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          pip install yt-dlp
+
+      - name: Run Live Stream
+        env:
+          STREAM_KEY: ${{ secrets.STREAM_KEY }}
+        run: |
+          python stream.py
