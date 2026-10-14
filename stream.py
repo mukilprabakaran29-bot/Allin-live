@@ -1,98 +1,77 @@
 import os
 import re
 import subprocess
+import time
 
-# Complete sequence of all 13 videos
+# Complete sequence of all 13 videos (Google Drive File IDs or Links)
 video_links = [
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 1. Intro
-    (
-        'https://drive.google.com/file/d/1-Dr_eOLCMxqP7puqyDtydyKhmduw15SF/view?usp=drivesdk'
-    ),  # 2. Main
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 3. Second Intro
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 4. Short 4
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 5. Short 5
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 6. Short 6
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 7. Short 7
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 8. Short 8
-    (
-        'https://drive.google.com/file/d/1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb/view?usp=drivesdk'
-    ),  # 9. Short 9
-    (
-        'https://drive.google.com/file/d/1bpQ_kKdPl32hMrElYNTHfkDH5NstC-pF/view?usp=drivesdk'
-    ),  # 10. Highlight Short
-    (
-        'https://drive.google.com/file/d/1cvKVIDrGDTSEg_eD-Zj02cJxB3bYuAhg/view?usp=drivesdk'
-    ),  # 11. Vibe Big Video
-    (
-        'https://drive.google.com/file/d/1rd1m5XDps6soYDPbXAQJ5A8av5uISycJ/view?usp=drivesdk'
-    ),  # 12. Extra Video
-    (
-        'https://drive.google.com/file/d/1H-VSfWm6ZiruBx3ZHbaLBGtCXr6lScrD/view?usp=drivesdk'
-    ),  # 13. Ending Video
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 1. Intro
+    '1-Dr_eOLCMxqP7puqyDtydyKhmduw15SF',  # 2. Main
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 3. Second Intro
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 4. Short 4
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 5. Short 5
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 6. Short 6
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 7. Short 7
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 8. Short 8
+    '1hkKADV8rIPaL-I89-ZzQMgUQuBTE7ECb',  # 9. Short 9
+    '1bpQ_kKdPl32hMrElYNTHfkDH5NstC-pF',  # 10. Highlight Short
+    '1cvKVIDrGDTSEg_eD-Zj02cJxB3bYuAhg',  # 11. Vibe Big Video
+    '1rd1m5XDps6soYDPbXAQJ5A8av5uISycJ',  # 12. Extra Video
+    '1H-VSfWm6ZiruBx3ZHbaLBGtCXr6lScrD',  # 13. Ending Video
 ]
 
-# Permanent Left-Side Pulsing Logo Link
-logo_link = 'https://drive.google.com/file/d/1Efg-hEkub7r8kR1yzQHzv4JnTvZnS5xe/view?usp=drivesdk'
+# Permanent Left-Side Pulsing Logo ID
+logo_id = '1Efg-hEkub7r8kR1yzQHzv4JnTvZnS5xe'
 
 stream_key = os.environ.get('STREAM_KEY')
 rtmp_url = f'rtmp://a.rtmp.youtube.com/live2/{stream_key}'
 
 
-def extract_id(link):
-  match = re.search(r'/d/([a-zA-Z0-9_-]+)', link)
-  return match.group(1) if match else None
+def extract_id(link_or_id):
+  match = re.search(r'/d/([a-zA-Z0-9_-]+)', link_or_id)
+  if match:
+    return match.group(1)
+  return link_or_id.strip()
 
 
 def download_and_prepare():
   downloaded_files = []
 
-  # 1. Download Logo
-  logo_id = extract_id(logo_link)
-  logo_file = 'logo.png'
-  if logo_id:
-    print('Downloading Left-Side Banner Logo...')
-    cmd_logo = [
-        'yt-dlp',
-        '-o',
-        logo_file,
-        f'https://drive.google.com/uc?id={logo_id}',
-    ]
-    subprocess.run(cmd_logo)
+  # 1. Install gdown if not available
+  subprocess.run(['pip', 'install', 'gdown', 'ffmpeg-python'])
 
-  # 2. Download and process videos
+  # 2. Download Logo
+  logo_file = 'logo.png'
+  clean_logo_id = extract_id(logo_id)
+  print('Downloading Left-Side Banner Logo...')
+  subprocess.run([
+      'gdown',
+      f'https://drive.google.com/uc?id={clean_logo_id}',
+      '-O',
+      logo_file,
+      '--fuzzy',
+  ])
+
+  # 3. Download and process videos
   for i, link in enumerate(video_links):
     file_id = extract_id(link)
     if not file_id:
       continue
     output_file = f'video_{i}.mp4'
     print(f'Downloading Video {i+1}...')
-    cmd = [
-        'yt-dlp',
-        '-o',
-        output_file,
+    subprocess.run([
+        'gdown',
         f'https://drive.google.com/uc?id={file_id}',
-    ]
-    subprocess.run(cmd)
+        '-O',
+        output_file,
+        '--fuzzy',
+    ])
 
-    if os.path.exists(output_file):
+    if os.path.exists(output_file) and os.path.getsize(output_file) > 1000:
       converted_file = f'ready_{i}.mp4'
       print(f'Processing Video {i+1} with Left-Side Logo Overlay & Blur...')
 
-      if os.path.exists(logo_file):
+      if os.path.exists(logo_file) and os.path.getsize(logo_file) > 1000:
         ffmpeg_filter = (
             '[0:v]scale=1920:1080,boxblur=r=20:p=1[bg];'
             '[0:v]scale=-1:1080:force_original_aspect_ratio=decrease[fg];'
@@ -157,7 +136,8 @@ def download_and_prepare():
         ]
 
       subprocess.run(convert_cmd)
-      downloaded_files.append(converted_file)
+      if os.path.exists(converted_file):
+        downloaded_files.append(converted_file)
 
   if downloaded_files:
     with open('playlist.txt', 'w') as f:
@@ -168,10 +148,7 @@ def download_and_prepare():
 
 
 def stream_playlist():
-  print(
-      'Starting continuous live stream with automated sizing, left-side logo,'
-      ' and ending video sequence...'
-  )
+  print('Starting continuous auto-reconnecting live stream...')
   ffmpeg_cmd = [
       'ffmpeg',
       '-re',
@@ -207,7 +184,12 @@ def stream_playlist():
       'flv',
       rtmp_url,
   ]
-  subprocess.run(ffmpeg_cmd)
+
+  while True:
+    process = subprocess.Popen(ffmpeg_cmd)
+    process.wait()
+    print('Stream disconnected or restarted. Reconnecting in 5 seconds...')
+    time.sleep(5)
 
 
 if __name__ == '__main__':
